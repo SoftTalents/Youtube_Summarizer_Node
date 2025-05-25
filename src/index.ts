@@ -91,7 +91,24 @@ class SummarAIMCPServer {
       const { name, arguments: args } = request.params;
 
       if (name === 'summarize_youtube_video') {
-        return this.handleSummarizeVideo(args as SummarizeVideoParams);
+        // Validate and convert args to proper type
+        if (!args || typeof args !== 'object') {
+          throw new Error('Invalid arguments provided');
+        }
+        
+        const params = args as Record<string, unknown>;
+        
+        // Validate required parameters
+        if (!params.youtube_video_url || typeof params.youtube_video_url !== 'string') {
+          throw new Error('youtube_video_url is required and must be a string');
+        }
+        
+        const validatedParams: SummarizeVideoParams = {
+          youtube_video_url: params.youtube_video_url,
+          custom_prompt: typeof params.custom_prompt === 'string' ? params.custom_prompt : undefined,
+        };
+        
+        return this.handleSummarizeVideo(validatedParams);
       }
 
       throw new Error(`Unknown tool: ${name}`);

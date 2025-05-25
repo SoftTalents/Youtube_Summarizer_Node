@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-// Test script for the SummarAI MCP server
-// This script helps verify the functionality before publishing
-
+// Improved test script for the SummarAI MCP server
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -18,81 +16,96 @@ if (!fs.existsSync(indexPath)) {
   process.exit(1);
 }
 
-// Test MCP protocol
-console.log('📋 Testing MCP protocol compliance...');
+console.log('✅ Compiled files found');
+console.log('📋 Testing server startup...');
 
+// Test with environment variables
 const mcpServer = spawn('node', [indexPath], {
-  stdio: ['pipe', 'pipe', 'pipe'],
+  stdio: ['pipe', 'pipe', 'inherit'], // inherit stderr to see logs immediately
   env: {
     ...process.env,
-    API_KEY: 'test-key',
+    API_KEY: 'test-key-123',
     YOUTUBE_VIDEO_SUMMARY_API_URL: 'http://localhost:8000/api/youtube/summarize'
   }
 });
 
 let output = '';
-let errorOutput = '';
+let responseCount = 0;
 
 mcpServer.stdout.on('data', (data) => {
-  output += data.toString();
-});
-
-mcpServer.stderr.on('data', (data) => {
-  errorOutput += data.toString();
-});
-
-// Test initialize request
-const initializeRequest = {
-  jsonrpc: '2.0',
-  id: 1,
-  method: 'initialize',
-  params: {
-    protocolVersion: '2024-11-05',
-    capabilities: {},
-    clientInfo: {
-      name: 'test-client',
-      version: '1.0.0'
-    }
+  const str = data.toString();
+  output += str;
+  
+  // Check for responses
+  if (str.includes('"id":')) {
+    responseCount++;
   }
-};
+  
+  console.log('📥 Received:', str.trim());
+});
 
-mcpServer.stdin.write(JSON.stringify(initializeRequest) + '\n');
+mcpServer.on('error', (error) => {
+  console.error('❌ Process error:', error);
+});
 
-// Test list tools request
+// Send initialization request
 setTimeout(() => {
-  const listToolsRequest = {
+  console.log('📤 Sending initialize request...');
+  const initRequest = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: {
+        name: 'test-client',
+        version: '1.0.0'
+      }
+    }
+  };
+  
+  mcpServer.stdin.write(JSON.stringify(initRequest) + '\n');
+}, 500);
+
+// Send tools list request
+setTimeout(() => {
+  console.log('📤 Sending tools/list request...');
+  const toolsRequest = {
     jsonrpc: '2.0',
     id: 2,
     method: 'tools/list',
     params: {}
   };
   
-  mcpServer.stdin.write(JSON.stringify(listToolsRequest) + '\n');
-}, 100);
+  mcpServer.stdin.write(JSON.stringify(toolsRequest) + '\n');
+}, 1000);
 
-// Close after testing
+// Clean up after test
 setTimeout(() => {
-  mcpServer.kill('SIGTERM');
-  
-  console.log('📤 Server stderr output:');
-  console.log(errorOutput);
-  
-  console.log('\n📥 Server stdout output:');
-  console.log(output);
-  
-  // Basic validation
-  if (errorOutput.includes('SummarAI MCP server running on stdio')) {
-    console.log('\n✅ Server started successfully!');
-  } else {
-    console.log('\n❌ Server may not have started correctly.');
-  }
+  console.log('\n🔍 Test Results:');
+  console.log(`📊 Responses received: ${responseCount}`);
   
   if (output.includes('summarize_youtube_video')) {
-    console.log('✅ Tools are properly registered!');
+    console.log('✅ Tool "summarize_youtube_video" found in response');
   } else {
-    console.log('❌ Tools may not be registered correctly.');
+    console.log('❌ Tool "summarize_youtube_video" NOT found in response');
   }
   
-  console.log('\n🎉 Test completed! Review the output above for any issues.');
+  if (output.includes('"result"')) {
+    console.log('✅ Server responding to requests properly');
+  } else {
+    console.log('❌ Server may not be responding properly');
+  }
   
-}, 2000);
+  console.log('\n🎉 Test completed!');
+  
+  mcpServer.kill('SIGTERM');
+  process.exit(0);
+}, 3000);
+
+// Handle process termination
+process.on('SIGINT', () => {
+  mcpServer.kill('SIGTERM');
+  process.exit(0);
+});
