@@ -1,6 +1,6 @@
 {
   "name": "summarai-mcp",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "MCP server for YouTube video summarization using SummarAI API",
   "main": "dist/index.js",
   "bin": {
@@ -13,8 +13,7 @@
     "start": "node dist/index.js",
     "test": "node test/test-server.js",
     "test:package": "node scripts/test-package.js",
-    "prepublishOnly": "npm run build",
-    "postinstall": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
@@ -37,11 +36,11 @@
   "homepage": "https://github.com/SoftTalents/Youtube_Summarizer_Node.git#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "@types/node": "^20.0.0",
     "axios": "^1.6.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "tsx": "^4.0.0"
   },
   "engines": {
