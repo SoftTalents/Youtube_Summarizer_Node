@@ -90,7 +90,7 @@ Add the following to your Claude Desktop configuration file (`~/claude_desktop_c
 ### Other MCP Clients
 
 The same configuration works with:
-- **Cursor Editor** - Add to `.cursor/config.json`
+- **Cursor Editor** - Add to `.cursor/mcp.json`
 - **VS Code** - Add to MCP extension settings
 - **Cline Terminal** - Configure in MCP settings
 - **Any MCP-compatible client** - Use the same JSON structure
@@ -103,7 +103,7 @@ The same configuration works with:
 | `YOUTUBE_VIDEO_SUMMARY_API_URL` | ⭕ Optional | `https://summarai-sale-python-backend.onrender.com/api/youtube/summarize` | Custom summarization endpoint |
 | `YOUTUBE_VIDEO_INFO_API_URL` | ⭕ Optional | `https://summarai-sale-python-backend.onrender.com/api/youtube/info` | Custom video info endpoint |
 
-> **Getting Your API Key:** Sign up at [SummarAI](https://summarai-sale-site.vercel.app/) to get your API key from the dashboard.
+> **Getting Your API Key:** Sign up at [SummarAI](https://www.summarai.top/) to get your API key from the dashboard.
 
 ### Command Line Options
 
@@ -239,7 +239,7 @@ npx summarai-mcp@latest --mcp
 
 **2. API Key Issues**
 - Ensure API key is set in your MCP client configuration
-- Get your API key from [SummarAI Dashboard](https://summarai-sale-site.vercel.app/)
+- Get your API key from [SummarAI Dashboard](https://www.summarai.top/)
 - Check for extra spaces or characters in the API key
 
 **3. Video Not Processing**
@@ -252,18 +252,23 @@ npx summarai-mcp@latest --mcp
 | Client | Configuration File |
 |--------|-------------------|
 | Claude Desktop | `~/claude_desktop_config.json` (Mac/Linux)<br>`%APPDATA%\Claude\claude_desktop_config.json` (Windows) |
-| Cursor | `.cursor/config.json` |
+| Cursor | `.cursor/mcp.json` |
 | VS Code | Extension settings |
 
 ## Version Information
 
-- **Current Version:** 1.0.7
+- **Current Version:** 1.0.8
 - **Node.js Requirement:** >= 18.0.0
 - **MCP SDK Version:** ^1.0.0
 
 ### Recent Updates
 
-**v1.0.7** (Latest)
+**v1.0.8** (Latest)
+- ✅ Fixed SummarAI website URL to https://www.summarai.top/
+- ✅ Corrected Cursor configuration file path to `.cursor/mcp.json`
+- ✅ Updated all documentation links
+
+**v1.0.7**
 - ✅ Corrected version information
 - ✅ Final documentation polish
 
@@ -323,7 +328,7 @@ npm publish
 
 - **Documentation:** [GitHub Repository](https://github.com/SoftTalents/Youtube_Summarizer_Node)
 - **Issues:** [GitHub Issues](https://github.com/SoftTalents/Youtube_Summarizer_Node/issues)
-- **API Keys:** [SummarAI Dashboard](https://summarai-sale-site.vercel.app/)
+- **API Keys:** [SummarAI Dashboard](https://www.summarai.top/)
 
 ## License
 
