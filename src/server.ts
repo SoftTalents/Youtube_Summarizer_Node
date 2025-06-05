@@ -10,7 +10,7 @@ const axios = require('axios');
 
 // Get API configuration from environment variables
 const API_KEY = process.env.API_KEY;
-const YOUTUBE_VIDEO_SUMMARY_API_URL = process.env.YOUTUBE_VIDEO_SUMMARY_API_URL || 'http://localhost:8000/api/youtube/summarize';
+const YOUTUBE_VIDEO_SUMMARY_API_URL = process.env.YOUTUBE_VIDEO_SUMMARY_API_URL || 'https://summarai-sale-python-backend.onrender.com/api/youtube/summarize';
 
 interface SummarizeVideoParams {
   youtube_video_url: string;
