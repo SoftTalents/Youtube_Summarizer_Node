@@ -1,7 +1,7 @@
 {
   "name": "summarai-mcp",
-  "version": "1.0.4",
-  "description": "MCP server for YouTube video summarization using SummarAI API",
+  "version": "1.0.5",
+  "description": "MCP server for YouTube video summarization and information retrieval using SummarAI API",
   "main": "dist/index.js",
   "bin": {
     "summarai-mcp": "dist/index.js"
@@ -19,6 +19,8 @@
     "mcp",
     "youtube",
     "summarization",
+    "video-info",
+    "transcript",
     "ai",
     "model-context-protocol",
     "npx",
