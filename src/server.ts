@@ -70,7 +70,7 @@ class SummarAIMCPServer {
     this.server = new Server(
       {
         name: 'summarai-mcp',
-        version: '1.0.5',
+        version: '1.0.7',
       },
       {
         capabilities: {
