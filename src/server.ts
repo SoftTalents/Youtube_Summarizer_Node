@@ -129,6 +129,60 @@ class SummarAIMCPServer {
     });
   }
 
+  private extractYouTubeVideoId(url: string): string | null {
+    try {
+      // Handle Google redirect URLs
+      if (url.includes('google.com/url') && url.includes('url=')) {
+        const urlParams = new URLSearchParams(url.split('?')[1]);
+        const redirectUrl = urlParams.get('url');
+        if (redirectUrl) {
+          // Decode the URL and recursively process it
+          url = decodeURIComponent(redirectUrl);
+        }
+      }
+
+      // Parse the URL
+      const urlObj = new URL(url);
+      
+      // Handle different YouTube URL formats
+      if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+        // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
+        const videoId = urlObj.searchParams.get('v');
+        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      } else if (urlObj.hostname === 'youtu.be') {
+        // Short YouTube URL: https://youtu.be/VIDEO_ID
+        const videoId = urlObj.pathname.substring(1); // Remove leading slash
+        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return videoId;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private validateYouTubeUrl(url: string): { isValid: boolean; cleanUrl?: string; error?: string } {
+    const videoId = this.extractYouTubeVideoId(url);
+    
+    if (!videoId) {
+      return {
+        isValid: false,
+        error: 'Invalid YouTube URL format. Please provide a valid YouTube video URL.'
+      };
+    }
+    
+    // Return a clean, standard YouTube URL
+    const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    return {
+      isValid: true,
+      cleanUrl
+    };
+  }
+
   private async handleSummarizeVideo(params: SummarizeVideoParams): Promise<CallToolResult> {
     const { youtube_video_url, custom_prompt } = params;
 
@@ -145,24 +199,26 @@ class SummarAIMCPServer {
       };
     }
 
-    // Validate YouTube URL format
-    const youtubeUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}$/;
-    if (!youtubeUrlRegex.test(youtube_video_url)) {
+    // Validate and clean YouTube URL
+    const urlValidation = this.validateYouTubeUrl(youtube_video_url);
+    if (!urlValidation.isValid) {
       return {
         content: [
           {
             type: 'text',
-            text: 'Error: Invalid YouTube URL format. Please provide a valid YouTube video URL.',
+            text: `Error: ${urlValidation.error}`,
           } as TextContent,
         ],
         isError: true,
       };
     }
 
+    const cleanYouTubeUrl = urlValidation.cleanUrl!;
+
     try {
-      // Prepare request data
+      // Prepare request data using the clean URL
       const requestData = {
-        url: youtube_video_url,
+        url: cleanYouTubeUrl,
         custom_prompt: custom_prompt || 'Summarize this YouTube video transcript:',
       };
 
