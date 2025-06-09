@@ -1,41 +1,57 @@
 {
   "name": "summarai-mcp",
-  "version": "1.0.0",
-  "description": "MCP server for YouTube video summarization using SummarAI API",
+  "version": "1.0.8",
+  "description": "MCP server for YouTube video summarization and information retrieval using SummarAI API",
   "main": "dist/index.js",
   "bin": {
     "summarai-mcp": "dist/index.js"
   },
+  "preferGlobal": true,
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "node test/test-server.js",
+    "test:package": "node scripts/test-package.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
     "youtube",
     "summarization",
+    "video-info",
+    "transcript",
     "ai",
-    "model-context-protocol"
+    "model-context-protocol",
+    "npx",
+    "cli"
   ],
   "author": "SoftTalents",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SoftTalents/Youtube_Summarizer_Node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SoftTalents/Youtube_Summarizer_Node/issues"
+  },
+  "homepage": "https://github.com/SoftTalents/Youtube_Summarizer_Node.git#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "axios": "^1.6.0"
+    "@types/node": "^20.0.0",
+    "axios": "^1.6.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "tsx": "^4.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "files": [
     "dist/**/*",
-    "README.md"
+    "src/**/*",
+    "README.md",
+    "tsconfig.json"
   ]
 }
