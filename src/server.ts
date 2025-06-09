@@ -179,46 +179,167 @@ class SummarAIMCPServer {
     });
   }
 
-  private extractYouTubeVideoId(url: string): string | null {
+  private extractYouTubeUrlFromRedirect(url: string): string {
     try {
-      // Handle Google redirect URLs
-      if (url.includes('google.com/url') && url.includes('url=')) {
-        const urlParams = new URLSearchParams(url.split('?')[1]);
-        const redirectUrl = urlParams.get('url');
-        if (redirectUrl) {
-          // Decode the URL and recursively process it
-          url = decodeURIComponent(redirectUrl);
-        }
-      }
-
-      // Parse the URL
       const urlObj = new URL(url);
       
-      // Handle different YouTube URL formats
+      // Check if it's a Google redirect URL
+      if (urlObj.hostname.includes('google.com') || urlObj.hostname.includes('google.')) {
+        const searchParams = urlObj.searchParams;
+        
+        // Look for the 'url' parameter which contains the actual YouTube URL
+        if (searchParams.has('url')) {
+          let extractedUrl = decodeURIComponent(searchParams.get('url')!);
+          // Additional decoding in case of double encoding
+          if (extractedUrl.includes('%')) {
+            extractedUrl = decodeURIComponent(extractedUrl);
+          }
+          console.error(`[DEBUG] Extracted YouTube URL from Google redirect: ${extractedUrl}`);
+          return extractedUrl;
+        }
+        
+        // Sometimes the URL might be in 'q' parameter
+        else if (searchParams.has('q')) {
+          let extractedUrl = decodeURIComponent(searchParams.get('q')!);
+          if (extractedUrl.includes('youtube.com') || extractedUrl.includes('youtu.be')) {
+            if (extractedUrl.includes('%')) {
+              extractedUrl = decodeURIComponent(extractedUrl);
+            }
+            console.error(`[DEBUG] Extracted YouTube URL from Google 'q' parameter: ${extractedUrl}`);
+            return extractedUrl;
+          }
+        }
+        
+        // Check for other Google service redirects (like from Gmail, Google Docs, etc.)
+        else if (urlObj.pathname.includes('/url')) {
+          for (const param of ['target', 'dest']) {
+            if (searchParams.has(param)) {
+              let extractedUrl = decodeURIComponent(searchParams.get(param)!);
+              if (extractedUrl.includes('youtube.com') || extractedUrl.includes('youtu.be')) {
+                if (extractedUrl.includes('%')) {
+                  extractedUrl = decodeURIComponent(extractedUrl);
+                }
+                console.error(`[DEBUG] Extracted YouTube URL from Google '${param}' parameter: ${extractedUrl}`);
+                return extractedUrl;
+              }
+            }
+          }
+        }
+      }
+      
+      // Check for other common redirect patterns (shortened URLs)
+      else if (['t.co', 'bit.ly', 'tinyurl.com', 'short.link', 'ow.ly', 'is.gd'].some(domain => urlObj.hostname.includes(domain))) {
+        console.error(`[DEBUG] Detected shortened URL: ${url}`);
+        // For shortened URLs, we return as-is since we can't follow redirects in this context
+        // The backend API will handle the redirect following
+        return url;
+      }
+      
+      // If it's not a redirect URL, return the original URL
+      return url;
+      
+    } catch (error) {
+      console.error(`[DEBUG] Error extracting URL from redirect: ${error}`);
+      return url;
+    }
+  }
+
+  private extractYouTubeVideoId(url: string): string | null {
+    try {
+      console.error(`[DEBUG] Processing URL for video ID extraction: ${url}`);
+      
+      // First, try to extract the actual YouTube URL from potential redirects
+      const actualUrl = this.extractYouTubeUrlFromRedirect(url);
+      console.error(`[DEBUG] URL after redirect extraction: ${actualUrl}`);
+      
+      // Parse the URL to handle various formats
+      const urlObj = new URL(actualUrl);
+      
+      // Handle youtube.com URLs
       if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
         // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
-        const videoId = urlObj.searchParams.get('v');
-        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-          return videoId;
+        if (urlObj.pathname === '/watch' || urlObj.pathname.startsWith('/watch')) {
+          const videoId = urlObj.searchParams.get('v');
+          if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+            console.error(`[DEBUG] Extracted video ID from youtube.com/watch: ${videoId}`);
+            return videoId;
+          }
         }
-      } else if (urlObj.hostname === 'youtu.be') {
+        
+        // Handle youtube.com/embed URLs
+        else if (urlObj.pathname.startsWith('/embed/')) {
+          const pathParts = urlObj.pathname.split('/embed/');
+          if (pathParts.length > 1) {
+            let videoId = pathParts[1];
+            // Clean the video ID (remove any additional parameters)
+            videoId = videoId.replace(/[^a-zA-Z0-9_-].*/, '');
+            if (videoId.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+              console.error(`[DEBUG] Extracted video ID from youtube.com/embed: ${videoId}`);
+              return videoId;
+            }
+          }
+        }
+        
+        // Handle youtube.com/v/ URLs
+        else if (urlObj.pathname.startsWith('/v/')) {
+          const pathParts = urlObj.pathname.split('/v/');
+          if (pathParts.length > 1) {
+            let videoId = pathParts[1];
+            videoId = videoId.replace(/[^a-zA-Z0-9_-].*/, '');
+            if (videoId.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+              console.error(`[DEBUG] Extracted video ID from youtube.com/v/: ${videoId}`);
+              return videoId;
+            }
+          }
+        }
+      } 
+      
+      // Handle youtu.be URLs
+      else if (urlObj.hostname === 'youtu.be') {
         // Short YouTube URL: https://youtu.be/VIDEO_ID
-        const videoId = urlObj.pathname.substring(1); // Remove leading slash
-        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+        let videoId = urlObj.pathname.substring(1); // Remove leading slash
+        // Clean the video ID (remove any additional parameters)
+        videoId = videoId.replace(/[^a-zA-Z0-9_-].*/, '');
+        if (videoId.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          console.error(`[DEBUG] Extracted video ID from youtu.be: ${videoId}`);
           return videoId;
         }
       }
       
+      // Fallback: try regex patterns for various YouTube URL formats
+      const patterns = [
+        /(?:v=|\/watch\?v=)([a-zA-Z0-9_-]{11})/,  // Standard YouTube URL
+        /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,      // Shortened YouTube URL
+        /(?:embed\/)([a-zA-Z0-9_-]{11})/,          // Embedded URLs
+        /(?:\/v\/)([a-zA-Z0-9_-]{11})/,            // /v/ URLs
+        /(?:watch%3Fv%3D)([a-zA-Z0-9_-]{11})/,     // URL encoded
+        /(?:&v=|%26v%3D)([a-zA-Z0-9_-]{11})/       // Additional parameter formats
+      ];
+      
+      for (const pattern of patterns) {
+        const match = actualUrl.match(pattern);
+        if (match && match[1]) {
+          const videoId = match[1];
+          console.error(`[DEBUG] Extracted video ID using regex pattern: ${videoId}`);
+          return videoId;
+        }
+      }
+      
+      console.error(`[DEBUG] Could not extract video ID from URL: ${actualUrl}`);
       return null;
     } catch (error) {
+      console.error(`[DEBUG] Error extracting video ID: ${error}`);
       return null;
     }
   }
 
   private validateYouTubeUrl(url: string): { isValid: boolean; cleanUrl?: string; error?: string } {
+    console.error(`[DEBUG] Validating YouTube URL: ${url}`);
+    
     const videoId = this.extractYouTubeVideoId(url);
     
     if (!videoId) {
+      console.error(`[DEBUG] Invalid or missing video ID`);
       return {
         isValid: false,
         error: 'Invalid YouTube URL format. Please provide a valid YouTube video URL.'
@@ -227,6 +348,7 @@ class SummarAIMCPServer {
     
     // Return a clean, standard YouTube URL
     const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    console.error(`[DEBUG] Valid YouTube URL with video ID: ${videoId}`);
     return {
       isValid: true,
       cleanUrl
